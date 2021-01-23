@@ -1,19 +1,18 @@
 // Nodependency web server
 const http = require('http');
-const url = require('url');
 const fs = require('fs');
 
 // Returns the HTML content type based on the file extension
 function getContentType(ext) {
   const mimeTypes = {
-    html: 'text/html',
-    jpeg: 'image/jpeg',
-    jpg: 'image/jpeg',
-    png: 'image/png',
-    svg: 'image/svg+xml',
-    json: 'application/json',
-    js: 'text/javascript',
-    css: 'text/css',
+    html: 'text/html;charset=UTF-8',
+    jpeg: 'image/jpeg;charset=UTF-8',
+    jpg: 'image/jpeg;charset=UTF-8',
+    png: 'image/png;charset=UTF-8',
+    svg: 'image/svg+xml;charset=UTF-8',
+    json: 'application/json;charset=UTF-8',
+    js: 'text/javascript;charset=UTF-8',
+    css: 'text/css;charset=UTF-8',
   };
   return mimeTypes[ext];
 }
@@ -21,11 +20,16 @@ function getContentType(ext) {
 // Sends HTML response
 function sendResponse(res, path, requestedResourceExists) {
   if (requestedResourceExists) {
-    const content = fs.readFileSync(path).toString(); // Not possible for images -> propably an encoding problem
-    res.writeHead(200, {
-      'Content-Type': getContentType(path.slice(path.lastIndexOf('.') + 1)),
-    });
-    res.end(JSON.stringify(content));
+    fs.readFile(path.toString(), (err, data) => {
+      if (err) throw err;
+      res.writeHead(200, {
+        'Content-Type': getContentType(path.slice(path.lastIndexOf('.') + 1)),
+      });
+      res.write(data);
+      res.end();
+    }); // Not possible for images -> probably an encoding problem
+
+    console.log(`HTTP 200 -->  ${path}`);
   } else {
     console.log('else');
     res.writeHead(404, { 'Content-Type': 'text/html' });
@@ -38,9 +42,8 @@ function sendResponse(res, path, requestedResourceExists) {
   If request contains path without file name and extension, index.html is looked up. Otherwise 404!
 */
 const handlerFunction = function (req, res) {
-  let call = new URL(req.url, 'http://localhost/');
-  let path = '.'.concat(call.pathname);
-  console.log(call.pathname);
+  const call = new URL(req.url, 'http://localhost/');
+  let path = './public'.concat(call.pathname);
 
   // If existing directory was requested
   if (fs.existsSync(path) && fs.lstatSync(path).isDirectory()) {
@@ -57,5 +60,7 @@ const handlerFunction = function (req, res) {
   }
 };
 
+const port = 3000;
 const server = http.createServer(handlerFunction);
-server.listen(3000, 'localhost');
+server.listen(port, 'localhost');
+console.log(`Server is listening on port ${port}`);
